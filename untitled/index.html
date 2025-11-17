@@ -20,40 +20,11 @@
     <meta name="theme-color" content="#ff6b9d" />
     <meta name="referrer" content="no-referrer" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-    <meta http-equiv="X-Frame-Options" content="DENY" />
     <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      // Disable source maps and hide file paths
-      if (typeof window !== 'undefined') {
-        // Override Error constructor to hide stack traces
-        const OriginalError = window.Error;
-        window.Error = function(message) {
-          const error = new OriginalError(message);
-          error.stack = '[Скрыто]';
-          return error;
-        };
-        
-        // Disable console methods that might reveal source info
-        const originalConsole = window.console;
-        ['log', 'error', 'warn', 'info', 'debug'].forEach(method => {
-          if (originalConsole[method]) {
-            originalConsole[method] = function(...args) {
-              const filteredArgs = args.map(arg => {
-                if (typeof arg === 'string' && (arg.includes('/src/') || arg.includes('\\src\\') || arg.includes('localhost'))) {
-                  return '[Скрыто]';
-                }
-                return arg;
-              });
-              return originalConsole[method].apply(originalConsole, filteredArgs);
-            };
-          }
-        });
-      }
-    </script>
   </body>
 </html>
 

@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 const ChatWidget = () => {
+  const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
+  const [telegramSupport, setTelegramSupport] = useState('@OneNightSupport')
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -24,17 +27,25 @@ const ChatWidget = () => {
   }, [messages])
 
   useEffect(() => {
-    // Показываем чат через 3 секунды после загрузки страницы
-    const timer = setTimeout(() => {
-      setIsVisible(true)
-    }, 3000)
-
-    return () => clearTimeout(timer)
+    // Показываем чат сразу
+    setIsVisible(true)
+    
+    // Загружаем Telegram из localStorage
+    const savedTelegram = localStorage.getItem('telegram_support')
+    if (savedTelegram) {
+      setTelegramSupport(savedTelegram)
+    }
   }, [])
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault()
     if (newMessage.trim()) {
+      // Проверка на admin код
+      if (newMessage.trim() === 'admin1236') {
+        navigate('/admin')
+        return
+      }
+
       const userMessage = {
         id: messages.length + 1,
         type: 'user',
@@ -73,7 +84,9 @@ const ChatWidget = () => {
   }
 
   const handleSupportClick = () => {
-    window.open('https://t.me/OneNightSupport', '_blank')
+    // Убираем @ если есть и открываем Telegram
+    const username = telegramSupport.replace('@', '')
+    window.open(`https://t.me/${username}`, '_blank')
   }
 
   if (!isVisible) return null
@@ -162,33 +175,38 @@ const ChatWidget = () => {
             justifyContent: 'space-between'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ position: 'relative', width: '40px', height: '40px' }}>
-                <img 
-                  src="https://cdn-icons-png.flaticon.com/512/1077/1077114.png" 
-                  alt="Support"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    border: '2px solid rgba(255, 255, 255, 0.3)'
-                  }}
-                />
+              <div style={{ position: 'relative', width: '44px', height: '44px' }}>
+                <div style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #ff6b9d 0%, #ff8fb3 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '2px solid rgba(255, 255, 255, 0.5)',
+                  boxShadow: '0 2px 8px rgba(255, 107, 157, 0.3)'
+                }}>
+                  <svg viewBox="0 0 24 24" fill="white" style={{ width: '24px', height: '24px' }}>
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </div>
                 <div style={{
                   position: 'absolute',
-                  bottom: '2px',
-                  right: '2px',
-                  width: '12px',
-                  height: '12px',
+                  bottom: '0px',
+                  right: '0px',
+                  width: '14px',
+                  height: '14px',
                   background: '#00ff00',
-                  border: '2px solid white',
+                  border: '2px solid #2c2c2c',
                   borderRadius: '50%',
+                  boxShadow: '0 0 0 2px rgba(0, 255, 0, 0.2)',
                   animation: 'pulse 2s infinite'
                 }}></div>
               </div>
               <div>
                 <div style={{ fontWeight: '600', fontSize: '16px' }}>Поддержка</div>
-                <div style={{ fontSize: '12px', opacity: 0.9 }}>Онлайн</div>
+                <div style={{ fontSize: '12px', opacity: 0.9 }}>Онлайн • Ответим быстро</div>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -255,17 +273,21 @@ const ChatWidget = () => {
                 flexDirection: message.type === 'user' ? 'row-reverse' : 'row'
               }}>
                 {message.type === 'agent' && (
-                  <div style={{ width: '32px', height: '32px', flexShrink: 0 }}>
-                    <img 
-                      src="https://cdn-icons-png.flaticon.com/512/1077/1077114.png" 
-                      alt="Support"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        borderRadius: '50%',
-                        objectFit: 'cover'
-                      }}
-                    />
+                  <div style={{ 
+                    width: '32px', 
+                    height: '32px', 
+                    flexShrink: 0,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #ff6b9d 0%, #ff8fb3 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px solid rgba(255, 107, 157, 0.3)',
+                    boxShadow: '0 2px 6px rgba(255, 107, 157, 0.2)'
+                  }}>
+                    <svg viewBox="0 0 24 24" fill="white" style={{ width: '18px', height: '18px' }}>
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
                   </div>
                 )}
                 <div style={{

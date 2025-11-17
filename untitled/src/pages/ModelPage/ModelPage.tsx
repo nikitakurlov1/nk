@@ -16,18 +16,36 @@ const ModelPage = () => {
   const [showSendModal, setShowSendModal] = useState(false)
   const [otherModels, setOtherModels] = useState<Model[]>([])
   const [preloadedImages, setPreloadedImages] = useState<Set<number>>(new Set([0]))
+  const [telegramSupport, setTelegramSupport] = useState('@OneNightSupport')
+
+  useEffect(() => {
+    // Загружаем Telegram из localStorage
+    const savedTelegram = localStorage.getItem('telegram_support')
+    if (savedTelegram) {
+      setTelegramSupport(savedTelegram)
+    }
+  }, [])
 
   useEffect(() => {
     const loadModel = async () => {
       try {
+        // Загружаем стоковые модели
         const response = await fetch('/data/models.json')
-        const models = await response.json()
-        const foundModel = models.find((m: Model) => m.id === parseInt(id || '0'))
+        const stockModels = await response.json()
+        
+        // Загружаем пользовательские модели из localStorage
+        const savedCustomModels = localStorage.getItem('custom_models')
+        const customModels = savedCustomModels ? JSON.parse(savedCustomModels) : []
+        
+        // Объединяем все модели
+        const allModels = [...stockModels, ...customModels]
+        
+        const foundModel = allModels.find((m: Model) => m.id === parseInt(id || '0'))
         setModel(foundModel || null)
         
         // Загружаем другие модели из того же города (до 4 штук)
         if (foundModel) {
-          const sameCityModels = models
+          const sameCityModels = allModels
             .filter((m: Model) => m.id !== foundModel.id && m.location === foundModel.location)
             .slice(0, 4)
           setOtherModels(sameCityModels)
@@ -65,13 +83,11 @@ const ModelPage = () => {
 
   // Touch handlers for swipe with 60fps optimization
   const handleTouchStart = (e: React.TouchEvent) => {
-    e.preventDefault()
     setTouchEnd(null)
     setTouchStart(e.targetTouches[0].clientX)
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    e.preventDefault()
     setTouchEnd(e.targetTouches[0].clientX)
   }
 
@@ -258,18 +274,12 @@ const ModelPage = () => {
             ONENIGHT
           </Link>
           <div className="header-actions-dark">
-            <svg className="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.35-4.35"></path>
-            </svg>
-            <svg className="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-            </svg>
-            <svg className="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
+            <Link to="/" className="header-search-btn">
+              <svg className="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+              </svg>
+            </Link>
           </div>
         </div>
       </div>
@@ -429,84 +439,55 @@ const ModelPage = () => {
 
             {/* Parameters Section */}
             <div className="model-section">
-              <div className="model-parameters">
-                <h2>Параметры</h2>
-                <div className="model-parameters-grid">
-                  <div className="model-parameter">
-                    <span className="parameter-label">Возраст:</span>
-                    <span className="parameter-value">{model.age} год</span>
-                  </div>
-                  <div className="model-parameter">
-                    <span className="parameter-label">Рост:</span>
-                    <span className="parameter-value">{model.height} см</span>
-                  </div>
-                  <div className="model-parameter">
-                    <span className="parameter-label">Вес:</span>
-                    <span className="parameter-value">{model.weight} кг</span>
-                  </div>
-                  <div className="model-parameter">
-                    <span className="parameter-label">Грудь:</span>
-                    <span className="parameter-value">{model.bust}</span>
-                  </div>
-                  <div className="model-parameter">
-                    <span className="parameter-label">Цвет волос:</span>
-                    <span className="parameter-value">{model.hair}</span>
-                  </div>
-                  <div className="model-parameter">
-                    <span className="parameter-label">Национальность:</span>
-                    <span className="parameter-value">{model.nationality}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Detailed Info Section */}
-            <div className="model-section">
               <div className="model-details-table">
-                <h2>Подробнее о модели</h2>
+                <h2>Параметры</h2>
                 <div className="model-details-row">
-                  <div className="model-details-label">Место встречи</div>
-                  <div className="model-details-value">{model.meetingPlace || 'Выезд'}</div>
-                </div>
-                <div className="model-details-row">
-                  <div className="model-details-label">Вес</div>
-                  <div className="model-details-value">{model.weight} кг</div>
-                </div>
-                <div className="model-details-row">
-                  <div className="model-details-label">Тип груди</div>
-                  <div className="model-details-value">Натуральная</div>
-                </div>
-                <div className="model-details-row">
-                  <div className="model-details-label">Цвет волос</div>
-                  <div className="model-details-value">{model.hair}</div>
-                </div>
-                <div className="model-details-row">
-                  <div className="model-details-label">Национальность</div>
-                  <div className="model-details-value">{model.nationality}</div>
-                </div>
-                <div className="model-details-row">
-                  <div className="model-details-label">Встречается с</div>
-                  <div className="model-details-value">Мужчины, Женщины, Пары</div>
+                  <div className="model-details-label">Возраст</div>
+                  <div className="model-details-value">{model.age} год</div>
                 </div>
                 <div className="model-details-row">
                   <div className="model-details-label">Рост</div>
                   <div className="model-details-value">{model.height} см</div>
                 </div>
                 <div className="model-details-row">
+                  <div className="model-details-label">Вес</div>
+                  <div className="model-details-value">{model.weight} кг</div>
+                </div>
+                <div className="model-details-row">
                   <div className="model-details-label">Размер груди</div>
                   <div className="model-details-value">{model.bust}</div>
+                </div>
+                <div className="model-details-row">
+                  <div className="model-details-label">Тип груди</div>
+                  <div className="model-details-value">Натуральная</div>
                 </div>
                 <div className="model-details-row">
                   <div className="model-details-label">Пропорции</div>
                   <div className="model-details-value">90-63-93</div>
                 </div>
                 <div className="model-details-row">
+                  <div className="model-details-label">Цвет волос</div>
+                  <div className="model-details-value">{model.hair}</div>
+                </div>
+                <div className="model-details-row">
                   <div className="model-details-label">Цвет глаз</div>
                   <div className="model-details-value">{model.eyes}</div>
                 </div>
                 <div className="model-details-row">
+                  <div className="model-details-label">Национальность</div>
+                  <div className="model-details-value">{model.nationality}</div>
+                </div>
+                <div className="model-details-row">
                   <div className="model-details-label">Разговорный язык</div>
-                  <div className="model-details-value">{model.languages.join(', ')}</div>
+                  <div className="model-details-value">{model.languages?.join(', ') || 'Русский'}</div>
+                </div>
+                <div className="model-details-row">
+                  <div className="model-details-label">Встречается с</div>
+                  <div className="model-details-value">Мужчины, Женщины, Пары</div>
+                </div>
+                <div className="model-details-row">
+                  <div className="model-details-label">Место встречи</div>
+                  <div className="model-details-value">{model.meetingPlace || 'Выезд'}</div>
                 </div>
               </div>
             </div>
@@ -684,12 +665,15 @@ const ModelPage = () => {
               <div className="send-modal-content">
                 <p>Для связи с {model.name} перейдите к нашему сутинеру в Telegram:</p>
                 <div className="send-modal-contact">
-                  <div className="send-modal-telegram">@OneNightSupport</div>
+                  <div className="send-modal-telegram">{telegramSupport}</div>
                 </div>
                 <div className="send-modal-actions">
                   <button 
                     className="send-modal-btn-primary"
-                    onClick={() => window.open('https://t.me/@OneNightSupport', '_blank')}
+                    onClick={() => {
+                      const username = telegramSupport.replace('@', '')
+                      window.open(`https://t.me/${username}`, '_blank')
+                    }}
                   >
                     Перейти в Telegram
                   </button>

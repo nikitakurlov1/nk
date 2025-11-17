@@ -44,18 +44,6 @@ const Footer = () => {
               </svg>
             </div>
           </div>
-          
-          <div className="footer-section">
-            <Link to="/">О проекте</Link>
-            <Link to="/">Контакты</Link>
-          </div>
-        
-          
-          <div className="footer-section">
-            <Link to="/terms">Правила</Link>
-            <Link to="/privacy">Политика конфиденциальности</Link>
-            <Link to="/terms">Пользовательское соглашение</Link>
-          </div>
         </div>
         
         <div className="footer-bottom">

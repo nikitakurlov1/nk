@@ -43,12 +43,6 @@ const Header = () => {
             </svg>
           </Link>
           <div className="header-actions">
-            <Link to="/create-profile" className="header-create-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-              Создать анкету
-            </Link>
             <button className="header-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M3 6h18M3 12h18M3 18h18"/>
@@ -61,9 +55,6 @@ const Header = () => {
       <div className="header-bottom">
         <nav className="nav">
           <Link to="/" className="active">Главная</Link>
-          <Link to="/create-profile">Создать анкету</Link>
-          <Link to="/privacy">Конфиденциальность</Link>
-          <Link to="/terms">Условия</Link>
         </nav>
       </div>
     </header>

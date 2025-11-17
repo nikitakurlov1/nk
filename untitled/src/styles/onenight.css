@@ -1123,119 +1123,6 @@ input, textarea, select {
   }
 }
 
-/* Model Creation Banner - Вариант 1: Простая акцентная рамка */
-.model-creation-banner {
-  background: #2c2c2c;
-  border: 3px solid #ff6b9d;
-  margin: 2rem 0;
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-.model-creation-banner:hover {
-  border-color: #e55a8a;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 107, 157, 0.2);
-}
-
-/* Вариант 2: С акцентной полосой слева (раскомментировать для использования)
-.model-creation-banner {
-  background: #2c2c2c;
-  border: 1px solid #444;
-  border-left: 5px solid #ff6b9d;
-  margin: 2rem 0;
-  transition: all 0.3s ease;
-}
-
-.model-creation-banner:hover {
-  border-left-color: #e55a8a;
-  background: #333;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 107, 157, 0.15);
-}
-*/
-
-/* Вариант 3: С акцентным фоном (раскомментировать для использования)
-.model-creation-banner {
-  background: #1a1a1a;
-  border: 2px solid #ff6b9d;
-  margin: 2rem 0;
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-.model-creation-banner::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 107, 157, 0.05);
-  z-index: 0;
-}
-
-.model-creation-banner:hover {
-  background: #2c2c2c;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 107, 157, 0.2);
-}
-*/
-
-.model-creation-content {
-  display: flex;
-  align-items: center;
-  padding: 2rem;
-  gap: 1.5rem;
-  position: relative;
-  z-index: 1;
-}
-
-.model-creation-icon {
-  font-size: 3rem;
-  color: #ff6b9d;
-}
-
-.model-creation-text {
-  flex: 1;
-}
-
-.model-creation-text h3 {
-  color: white;
-  font-size: 1.8rem;
-  margin-bottom: 0.5rem;
-  font-weight: 700;
-}
-
-.model-creation-text p {
-  color: #ccc;
-  font-size: 1.1rem;
-  margin: 0;
-  font-weight: 500;
-}
-
-.model-creation-btn {
-  background: #ff6b9d;
-  color: white;
-  text-decoration: none;
-  padding: 1.2rem 2.5rem;
-  border-radius: 0;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  transition: all 0.3s ease;
-  display: inline-block;
-  border: 2px solid #ff6b9d;
-}
-
-.model-creation-btn:hover {
-  background: #e55a8a;
-  border-color: #e55a8a;
-  text-decoration: none;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 107, 157, 0.3);
-}
-
 /* Features Filter */
 .features-filter {
   text-align: center;
@@ -1243,19 +1130,30 @@ input, textarea, select {
 
 /* Mobile Responsive for Features */
 @media (max-width: 768px) {
-  .features-stats,
+  .features-stats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+  
   .features-benefits {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
   
-  .stat-card,
+  .stat-card {
+    padding: 1rem;
+  }
+  
   .benefit-card {
     padding: 1.5rem;
   }
   
   .stat-number {
-    font-size: 2rem;
+    font-size: 1.5rem;
+  }
+  
+  .stat-label {
+    font-size: 0.7rem;
   }
   
   .benefit-icon {
@@ -1264,20 +1162,6 @@ input, textarea, select {
   
   .homepage-features {
     padding: 2rem 0;
-  }
-  
-  .model-creation-content {
-    flex-direction: column;
-    text-align: center;
-    gap: 1rem;
-  }
-  
-  .model-creation-icon {
-    font-size: 2rem;
-  }
-  
-  .model-creation-text h3 {
-    font-size: 1.3rem;
   }
 }
 
@@ -2536,13 +2420,24 @@ input, textarea, select {
   background: #1a1a1a;
   min-height: 100vh;
   color: #ffffff;
+  padding-top: 70px;
+}
+
+/* Homepage Styles */
+.homepage {
+  padding-top: 70px;
 }
 
 /* Header with Logo */
 .header-dark {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   background: #2c2c2c;
   padding: 1rem 0;
   border-bottom: 1px solid #333;
+  z-index: 1000;
 }
 
 .header-dark-content {
@@ -2574,6 +2469,16 @@ input, textarea, select {
   display: flex;
   align-items: center;
   gap: 1rem;
+}
+
+.header-search-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .header-icon {
