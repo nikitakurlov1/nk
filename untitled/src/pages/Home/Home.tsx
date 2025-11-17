@@ -5,6 +5,7 @@ import Footer from '../../components/common/Footer/Footer'
 import FilterModal from '../../components/filters/FilterModal/FilterModal'
 import ModelCard from '../../components/model/ModelCard/ModelCard'
 import ChatWidget from '../../components/common/ChatWidget/ChatWidget'
+import { subscribeToModels } from '../../firebase/services'
 import './Home.module.css'
 
 const Home = () => {
@@ -20,16 +21,18 @@ const Home = () => {
         const response = await fetch('/data/models.json')
         const stockData = await response.json()
         
-        // Загружаем пользовательские модели из localStorage
-        const savedCustomModels = localStorage.getItem('custom_models')
-        const customData = savedCustomModels ? JSON.parse(savedCustomModels) : []
-        
-        // Объединяем стоковые и пользовательские модели
-        const allModels = [...stockData, ...customData]
-        
-        setModels(allModels)
-        setFilteredModels(allModels)
-        setLoading(false)
+        // Подписываемся на пользовательские модели из Firebase
+        const unsubscribe = subscribeToModels((firebaseModels) => {
+          // Объединяем стоковые и пользовательские модели из Firebase
+          const allModels = [...stockData, ...firebaseModels]
+          
+          setModels(allModels)
+          setFilteredModels(allModels)
+          setLoading(false)
+        })
+
+        // Отписка при размонтировании
+        return () => unsubscribe()
       } catch (error) {
         console.error('Error loading models:', error)
         setLoading(false)

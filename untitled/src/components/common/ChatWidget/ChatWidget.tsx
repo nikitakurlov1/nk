@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { subscribeToSettings } from '../../../firebase/services'
 
 const ChatWidget = () => {
   const navigate = useNavigate()
@@ -30,11 +31,13 @@ const ChatWidget = () => {
     // Показываем чат сразу
     setIsVisible(true)
     
-    // Загружаем Telegram из localStorage
-    const savedTelegram = localStorage.getItem('telegram_support')
-    if (savedTelegram) {
-      setTelegramSupport(savedTelegram)
-    }
+    // Подписываемся на изменения настроек в реальном времени
+    const unsubscribe = subscribeToSettings((settings) => {
+      setTelegramSupport(settings.telegramSupport || '@OneNightSupport')
+    })
+
+    // Отписка при размонтировании
+    return () => unsubscribe()
   }, [])
 
   const handleSendMessage = (e: React.FormEvent) => {

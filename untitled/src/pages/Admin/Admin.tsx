@@ -1,52 +1,27 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './Admin.css'
-
-interface Model {
-  id: number
-  name: string
-  age: number
-  location: string
-  price: number
-  verified: boolean
-  vip: boolean
-  online: boolean
-  newThisWeek?: boolean
-  photos: string[]
-  height?: number
-  weight?: number
-  bust?: string
-  hair?: string
-  eyes?: string
-  nationality?: string
-  languages?: string[]
-  description?: string
-  meetingPlace?: string
-  services?: string[]
-  isStock?: boolean // Флаг для стоковых анкет
-}
-
-interface Order {
-  id: number
-  modelId: number
-  modelName: string
-  pimpTelegram: string
-  date: string
-  time: string
-  duration: string
-  price: number
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled'
-  location: string
-  notes?: string
-  createdAt: string
-}
+import {
+  subscribeToModels,
+  subscribeToOrders,
+  subscribeToSettings,
+  addModel,
+  updateModel,
+  deleteModels,
+  addOrder,
+  updateOrder,
+  deleteOrder as deleteOrderFromDB,
+  saveSettings,
+  Model,
+  Order
+} from '../../firebase/services'
 
 const Admin = () => {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<'models' | 'orders' | 'settings'>('models')
   const [stockModels, setStockModels] = useState<Model[]>([]) // Стоковые анкеты
-  const [customModels, setCustomModels] = useState<Model[]>([]) // Пользовательские анкеты
-  const [selectedRows, setSelectedRows] = useState<number[]>([])
+  const [customModels, setCustomModels] = useState<Model[]>([]) // Пользовательские анкеты из Firebase
+  const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [editingModel, setEditingModel] = useState<Model | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
@@ -54,75 +29,68 @@ const Admin = () => {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null)
   const [showStats, setShowStats] = useState(false)
   const [telegramSupport, setTelegramSupport] = useState('')
+  const [, setLoading] = useState(true)
 
   // Объединенный список всех моделей
   const models = [...stockModels, ...customModels]
 
   useEffect(() => {
-    loadModels()
-    loadOrders()
-    loadSettings()
+    loadStockModels()
+
+    // Подписка на изменения моделей в реальном времени
+    const unsubscribeModels = subscribeToModels((firebaseModels) => {
+      setCustomModels(firebaseModels)
+      setLoading(false)
+    })
+
+    // Подписка на изменения заказов в реальном времени
+    const unsubscribeOrders = subscribeToOrders((firebaseOrders) => {
+      setOrders(firebaseOrders)
+    })
+
+    // Подписка на изменения настроек в реальном времени
+    const unsubscribeSettings = subscribeToSettings((settings) => {
+      setTelegramSupport(settings.telegramSupport || '@OneNightSupport')
+    })
+
+    // Отписка при размонтировании
+    return () => {
+      unsubscribeModels()
+      unsubscribeOrders()
+      unsubscribeSettings()
+    }
   }, [])
 
-  const loadOrders = () => {
-    const savedOrders = localStorage.getItem('admin_orders')
-    if (savedOrders) {
-      setOrders(JSON.parse(savedOrders))
-    }
-  }
-
-  const loadSettings = () => {
-    const savedTelegram = localStorage.getItem('telegram_support')
-    if (savedTelegram) {
-      setTelegramSupport(savedTelegram)
-    } else {
-      setTelegramSupport('@OneNightSupport')
-    }
-  }
-
-  const handleSaveSettings = () => {
-    localStorage.setItem('telegram_support', telegramSupport)
-    alert('Настройки сохранены!')
-  }
-
-  // Сохранение пользовательских моделей в localStorage
-  useEffect(() => {
-    if (customModels.length > 0) {
-      localStorage.setItem('custom_models', JSON.stringify(customModels))
-    } else {
-      localStorage.removeItem('custom_models')
-    }
-  }, [customModels])
-
-  // Сохранение заказов в localStorage
-  useEffect(() => {
-    if (orders.length > 0) {
-      localStorage.setItem('admin_orders', JSON.stringify(orders))
-    } else {
-      localStorage.removeItem('admin_orders')
-    }
-  }, [orders])
-
-  const loadModels = async () => {
+  const loadStockModels = async () => {
     try {
       // Загружаем стоковые анкеты из файла
       const response = await fetch('/data/models.json')
       const stockData = await response.json()
-      // Помечаем их как стоковые
-      const markedStockData = stockData.map((model: Model) => ({ ...model, isStock: true }))
+      // Помечаем их как стоковые и добавляем строковый ID
+      const markedStockData = stockData.map((model: any) => ({ 
+        ...model, 
+        id: `stock_${model.id}`,
+        isStock: true 
+      }))
       setStockModels(markedStockData)
-      
-      // Загружаем пользовательские анкеты из localStorage
-      const savedCustomModels = localStorage.getItem('custom_models')
-      if (savedCustomModels) {
-        setCustomModels(JSON.parse(savedCustomModels))
-      }
     } catch (error) {
-      console.error('Error loading models:', error)
+      console.error('Error loading stock models:', error)
     }
   }
 
-  const handleCellEdit = (modelId: number, field: keyof Model, value: any) => {
+  const handleSaveSettings = async () => {
+    try {
+      await saveSettings({ telegramSupport })
+      alert('Настройки сохранены и синхронизированы со всеми пользователями!')
+    } catch (error) {
+      console.error('Error saving settings:', error)
+      alert('Ошибка при сохранении настроек')
+    }
+  }
+
+  const handleCellEdit = async (modelId: string | undefined, field: keyof Model, value: any) => {
+    if (!modelId) return
+    
     // Проверяем, это стоковая или пользовательская модель
     const model = models.find(m => m.id === modelId)
     if (!model) return
@@ -133,13 +101,17 @@ const Admin = () => {
       return
     }
     
-    // Редактируем только пользовательские модели
-    setCustomModels(customModels.map(m => 
-      m.id === modelId ? { ...m, [field]: value } : m
-    ))
+    try {
+      // Обновляем в Firebase
+      await updateModel(modelId, { [field]: value })
+    } catch (error) {
+      console.error('Error updating model:', error)
+      alert('Ошибка при обновлении модели')
+    }
   }
 
-  const handleSelectRow = (id: number) => {
+  const handleSelectRow = (id: string | undefined) => {
+    if (!id) return
     if (selectedRows.includes(id)) {
       setSelectedRows(selectedRows.filter(rowId => rowId !== id))
     } else {
@@ -151,16 +123,13 @@ const Admin = () => {
     if (selectedRows.length === models.length) {
       setSelectedRows([])
     } else {
-      setSelectedRows(models.map(m => m.id))
+      setSelectedRows(models.map(m => m.id!).filter(id => !id.startsWith('stock_')))
     }
   }
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     // Проверяем, есть ли стоковые модели в выборке
-    const hasStockModels = selectedRows.some(id => {
-      const model = models.find(m => m.id === id)
-      return model?.isStock
-    })
+    const hasStockModels = selectedRows.some(id => id.startsWith('stock_'))
     
     if (hasStockModels) {
       alert('Нельзя удалять стоковые анкеты. Выберите только пользовательские.')
@@ -168,14 +137,18 @@ const Admin = () => {
     }
     
     if (window.confirm(`Удалить ${selectedRows.length} записей?`)) {
-      setCustomModels(customModels.filter(m => !selectedRows.includes(m.id)))
-      setSelectedRows([])
+      try {
+        await deleteModels(selectedRows)
+        setSelectedRows([])
+      } catch (error) {
+        console.error('Error deleting models:', error)
+        alert('Ошибка при удалении моделей')
+      }
     }
   }
 
-  const handleAddNew = () => {
-    const newModel: Model = {
-      id: Math.max(...models.map(m => m.id), 0) + 1,
+  const handleAddNew = async () => {
+    const newModel: Omit<Model, 'id'> = {
       name: 'Новая модель',
       age: 18,
       location: 'Москва',
@@ -184,9 +157,15 @@ const Admin = () => {
       vip: false,
       online: false,
       photos: [],
-      isStock: false // Новая модель - пользовательская
+      isStock: false
     }
-    setCustomModels([newModel, ...customModels])
+    
+    try {
+      await addModel(newModel)
+    } catch (error) {
+      console.error('Error adding model:', error)
+      alert('Ошибка при добавлении модели')
+    }
   }
 
   const handleAutoFill = () => {
@@ -297,9 +276,8 @@ const Admin = () => {
   }
 
   const handleAddOrder = () => {
-    const newOrder: Order = {
-      id: Math.max(...orders.map(o => o.id), 0) + 1,
-      modelId: 0,
+    const newOrder: Partial<Order> = {
+      modelId: '',
       modelName: '',
       pimpTelegram: '',
       date: new Date().toISOString().split('T')[0],
@@ -307,38 +285,41 @@ const Admin = () => {
       duration: '1 час',
       price: 0,
       status: 'pending',
-      location: 'Москва',
-      createdAt: new Date().toISOString()
+      location: 'Москва'
     }
-    setEditingOrder(newOrder)
+    setEditingOrder(newOrder as Order)
     setShowOrderModal(true)
   }
 
-  const handleSaveOrder = () => {
+  const handleSaveOrder = async () => {
     if (!editingOrder) return
     
-    const existingOrder = orders.find(o => o.id === editingOrder.id)
-    
-    if (existingOrder) {
-      // Обновление существующего заказа
-      setOrders(orders.map(o => o.id === editingOrder.id ? editingOrder : o))
-    } else {
-      // Добавление нового заказа - генерируем новый ID
-      const newOrder = {
-        ...editingOrder,
-        id: Math.max(...orders.map(o => o.id), 0) + 1,
-        createdAt: new Date().toISOString()
+    try {
+      if (editingOrder.id) {
+        // Обновление существующего заказа
+        await updateOrder(editingOrder.id, editingOrder)
+      } else {
+        // Добавление нового заказа
+        await addOrder(editingOrder)
       }
-      setOrders([newOrder, ...orders])
+      
+      setShowOrderModal(false)
+      setEditingOrder(null)
+    } catch (error) {
+      console.error('Error saving order:', error)
+      alert('Ошибка при сохранении заказа')
     }
-    
-    setShowOrderModal(false)
-    setEditingOrder(null)
   }
 
-  const handleDeleteOrder = (id: number) => {
+  const handleDeleteOrder = async (id: string | undefined) => {
+    if (!id) return
     if (window.confirm('Удалить заказ?')) {
-      setOrders(orders.filter(o => o.id !== id))
+      try {
+        await deleteOrderFromDB(id)
+      } catch (error) {
+        console.error('Error deleting order:', error)
+        alert('Ошибка при удалении заказа')
+      }
     }
   }
 
@@ -493,12 +474,12 @@ const Admin = () => {
                 {filteredModels.map((model) => (
                   <tr 
                     key={model.id}
-                    className={selectedRows.includes(model.id) ? 'selected' : ''}
+                    className={model.id && selectedRows.includes(model.id) ? 'selected' : ''}
                   >
                     <td>
                       <input 
                         type="checkbox" 
-                        checked={selectedRows.includes(model.id)}
+                        checked={model.id ? selectedRows.includes(model.id) : false}
                         onChange={() => handleSelectRow(model.id)}
                         disabled={model.isStock}
                       />
@@ -653,9 +634,16 @@ const Admin = () => {
                             <button 
                               className="admin-btn-icon-small" 
                               title="Удалить"
-                              onClick={() => {
+                              onClick={async () => {
                                 if (window.confirm(`Удалить модель ${model.name}?`)) {
-                                  setCustomModels(customModels.filter(m => m.id !== model.id))
+                                  try {
+                                    if (model.id) {
+                                      await deleteModels([model.id])
+                                    }
+                                  } catch (error) {
+                                    console.error('Error deleting model:', error)
+                                    alert('Ошибка при удалении модели')
+                                  }
                                 }
                               }}
                             >
@@ -1266,10 +1254,22 @@ const Admin = () => {
               </button>
               <button 
                 className="admin-btn-primary"
-                onClick={() => {
-                  // Сохраняем только пользовательские модели
-                  setCustomModels(customModels.map(m => m.id === editingModel.id ? editingModel : m))
-                  setEditingModel(null)
+                onClick={async () => {
+                  if (!editingModel) return
+                  
+                  try {
+                    if (editingModel.id) {
+                      // Обновляем существующую модель в Firebase
+                      await updateModel(editingModel.id, editingModel)
+                    } else {
+                      // Добавляем новую модель
+                      await addModel(editingModel)
+                    }
+                    setEditingModel(null)
+                  } catch (error) {
+                    console.error('Error saving model:', error)
+                    alert('Ошибка при сохранении модели')
+                  }
                 }}
               >
                 Сохранить изменения
@@ -1301,7 +1301,7 @@ const Admin = () => {
                     <select 
                       value={editingOrder.modelId}
                       onChange={(e) => {
-                        const modelId = parseInt(e.target.value)
+                        const modelId = e.target.value
                         const model = models.find(m => m.id === modelId)
                         setEditingOrder({
                           ...editingOrder, 
@@ -1311,7 +1311,7 @@ const Admin = () => {
                         })
                       }}
                     >
-                      <option value={0}>Выберите модель</option>
+                      <option value="">Выберите модель</option>
                       {models.map(model => (
                         <option key={model.id} value={model.id}>{model.name} - {model.location}</option>
                       ))}
